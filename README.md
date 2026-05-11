@@ -1,4 +1,6 @@
-# Logic-Loom Releases
+# Meet The Logic-Loom
+
+![banner image](./assets/banner.png)
 
 > *It gathers the scrolls from the shelves in the hall, it thinks up the links that connect them all!*
 >
