@@ -1,0 +1,5 @@
+# Local release upload staging; keep large binaries out of git history
+staging/
+
+# macOS Finder noise
+.DS_Store
