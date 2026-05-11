@@ -26,6 +26,10 @@ Each GitHub Release should include:
 - checksum manifest
 - install notes / known issues
 
+Not every alpha will ship every platform on day one. If your target platform
+is not published yet and you have source access, the advanced Linux / Windows
+build notes below explain how to package Logic-Loom locally on that OS.
+
 ## macOS
 
 1. Download the `.dmg` for your architecture.
@@ -57,6 +61,34 @@ xattr -dr com.apple.quarantine /Applications/Logic-Loom.app
 
 Unsigned alpha builds can trigger SmartScreen warnings until code signing is added.
 
+### Build from source on Windows
+
+If a Windows asset is not available for your target alpha and you have source
+access, build **on Windows** rather than cross-compiling from another OS.
+
+Prerequisites:
+
+- Node.js 20+
+- pnpm 11
+- Rust stable with the MSVC toolchain
+- Visual Studio C++ Build Tools
+- Microsoft Edge WebView2 runtime
+- `uv`
+- a sibling checkout of `zotero-summarizer` at `..\zotero-summarizer`
+
+From PowerShell in the source repo root:
+
+```powershell
+pnpm install
+pnpm logic-loom:package:windows
+```
+
+That flow freezes the bundled Python sidecar with `uv`, then builds the Tauri
+desktop package. Resulting installers land under:
+
+- `apps/desktop/src-tauri/target/release/bundle/nsis/`
+- `apps/desktop/src-tauri/target/release/bundle/msi/`
+
 ## Linux
 
 Platform assets may vary by release. If an AppImage is provided:
@@ -71,6 +103,35 @@ chmod +x Logic-Loom-*.AppImage
 ```
 
 If a `.deb` or other package is provided in a later release, prefer the instructions packaged with that specific release.
+
+### Build from source on Linux
+
+If no Linux artifact is published yet and you have source access, build on a
+Linux machine with the native packaging dependencies installed.
+
+Typical prerequisites:
+
+- Node.js 20+
+- pnpm 11
+- Rust stable
+- `uv`
+- a sibling checkout of `../zotero-summarizer`
+- distro packages for the Tauri GTK/WebKit stack such as `build-essential`,
+  `pkg-config`, `libgtk-3-dev`, `libwebkit2gtk-4.1-dev`,
+  `libayatana-appindicator3-dev`, `librsvg2-dev`, and `patchelf`
+
+From the source repo root:
+
+```bash
+pnpm install
+pnpm logic-loom:package:linux
+```
+
+That builds the sidecar with `uv` and packages the desktop app for the current
+Linux host. The resulting artifacts usually land under:
+
+- `apps/desktop/src-tauri/target/release/bundle/appimage/`
+- `apps/desktop/src-tauri/target/release/bundle/deb/`
 
 ## First launch checklist
 
