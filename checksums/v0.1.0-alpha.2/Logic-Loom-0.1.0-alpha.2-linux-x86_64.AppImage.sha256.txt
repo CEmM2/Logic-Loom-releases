@@ -1,0 +1,1 @@
+6428093e855b936570d6b4590fa4852a3af04817be27d3530c6cc8d8e316d837  Logic-Loom-0.1.0-alpha.2-linux-x86_64.AppImage

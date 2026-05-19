@@ -1,0 +1,5 @@
+6428093e855b936570d6b4590fa4852a3af04817be27d3530c6cc8d8e316d837  Logic-Loom-0.1.0-alpha.2-linux-x86_64.AppImage
+d7b6daa4f9597bc1edf1022b1f2f500ecdeb9e04ce7c5245e0ac457224f6199e  Logic-Loom-0.1.0-alpha.2-linux-x86_64.deb
+fc8006d6d4412664d0badf63436d85385addb8151b1583c3137e77e68efa927e  Logic-Loom-0.1.0-alpha.2-macOS-arm64.dmg
+8cdb67d520a627415ae8db0a477d5a3a03db44f1fed318de20c1f33c9486d1f1  Logic-Loom-0.1.0-alpha.2-windows-x86_64-setup.exe
+d86a7be38b6dccae7d0e0acad6176350a850af77032f69b2dd8a326e125b0e8e  Logic-Loom-0.1.0-alpha.2-windows-x86_64.msi
