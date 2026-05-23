@@ -1,1 +1,1 @@
-fc8006d6d4412664d0badf63436d85385addb8151b1583c3137e77e68efa927e  Logic-Loom-0.1.0-alpha.2-macOS-arm64.dmg
+f815979295316ceeeed15b0f5c276e80177a14b9e8a527d6c77212c3e381649f  Logic-Loom-0.1.0-alpha.2-macOS-arm64.dmg
