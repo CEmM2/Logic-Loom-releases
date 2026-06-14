@@ -2,6 +2,11 @@
 
 This repository is the public documentation and binary-distribution home for Logic-Loom.
 
+Logic-Loom is now a **three-mode desktop shell** — `zsum` (the research pipeline),
+`akms` (optional knowledge-graph tooling, including the new **Learn** tab), and
+`assistant` (paper discovery + workspace search). The latest public track is
+**v0.1.0-alpha.3**.
+
 Use the pages below depending on what you need:
 
 | Page | What it covers |

@@ -44,6 +44,30 @@ When the supporting AKMS resources are available, Logic-Loom may expose:
 - **Picker** — batch selection and notebook-oriented paper grouping
 - **Nodes** — generated-node browsing, validation, and review
 - **Graph** — read-only graph exploration based on AKMS core data
+- **Learn** *(in active testing)* — compile AKMS knowledge into learning artifacts
+
+## AKMS Learn
+
+As of **v0.1.0-alpha.3**, Logic-Loom ships a **Learn** tab backed by the vendored
+`akms-learn` engine. Given a slice of the AKMS graph and a learning request, it
+compiles a **Learning Source Packet (LSP)** — a reproducible artifact with a
+reading order, per-node section extraction, pitfalls, assessment items, code
+links, and a validation block — and exports it in a chosen format.
+
+A few things worth knowing:
+
+- The UI is **capability-driven**: the available generation modes and exporters
+  come from the backend, and any mode that is unavailable or merely planned
+  renders disabled rather than failing when you submit.
+- A handful of generation modes need an LLM. Those activate only when the host
+  supplies an LLM provider; without one, they degrade gracefully to disabled.
+- You can hand a graph selection straight to Learn with the **"Send to Learn"**
+  action in the Graph view.
+- Compiled artifacts are cached locally and never written into the AKMS source
+  vault.
+
+Learn is new and still in active testing — treat its modes and exporters as
+evolving.
 
 ## Important release caveat
 

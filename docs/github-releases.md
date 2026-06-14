@@ -29,6 +29,12 @@ Before publishing a new release:
 5. Link to or summarize any important install notes and known issues.
 6. Draft the GitHub Release and upload the assets plus checksum manifest.
 
+Most of these steps are now automated by a single script in the implementation
+repository (`scripts/release.sh`): it picks up the CI-built binaries, normalizes
+their filenames, stages them plus checksum manifests into this release repo,
+ships versioned copies of `README.md` and `CHANGELOG.md` as attached assets, and
+creates the GitHub Release. The checklist above remains the underlying recipe.
+
 ## Suggested repository mapping
 
 - `release-notes/<version>.md` — release body text to paste into GitHub Releases

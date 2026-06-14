@@ -1,25 +1,49 @@
 # Logic-Loom overview
 
-Logic-Loom is a desktop companion for the `zotero-summarizer` workflow. It wraps the underlying research pipeline in a local desktop interface so you can run stages, watch logs, inspect generated notes, and—when available—connect the output to AKMS-assisted knowledge workflows.
+Logic-Loom is a desktop companion for research workflows. It began as a front-end for the `zotero-summarizer` pipeline and has grown into a **three-mode desktop shell** that also covers optional AKMS knowledge-graph tooling and a research **Assistant** for paper discovery and workspace-wide search.
 
-## What Logic-Loom does
+## The three modes
 
-| Area | What you can do |
+Logic-Loom presents a top-level mode switcher; every workflow belongs to one of three modes.
+
+| Mode | What it covers |
 | --- | --- |
-| Pipeline | Run core zsum stages such as extraction, card generation, digests, and publish with live log output |
-| Vault | Browse generated markdown, preview notes, resolve wikilinks, and search local content |
-| Settings | Configure paths, caches, provider options, and other workflow settings |
-| Graph | Explore a read-only AKMS graph view with filters, ego slices, cluster slices, and inspector actions |
-| Picker / Nodes | Use optional AKMS workflows for paper batching, node generation, validation, and review |
+| **zsum** | Run the `zotero-summarizer` pipeline (extract, cards, digests, publish), browse the published vault and collection hierarchy, and inspect past runs |
+| **akms** *(gated)* | Optional AKMS knowledge-graph tooling: batch paper selection, node generation and validation, a read-only graph explorer, and the new **Learn** tab |
+| **assistant** | Paper discovery across OpenAlex + Semantic Scholar, source batches, workflow runs, and a workspace-wide Cmd-K search |
+
+AKMS mode is gated: its tabs appear only when the supporting AKMS packages and a readable source vault are available.
+
+## What you can do
+
+### zsum mode
+- Run zsum stages (extract, cards, digests, publish, …) with live log streaming
+- Browse and search the published Obsidian-style vault, with wikilink resolution
+- Browse the collection hierarchy with digest- and card-state indicators
+- Inspect and rerun previous pipeline runs
+- *(in active testing)* route generation through **NotebookLM**, extract by **section** rather than fixed page ranges, run **enrichment commands** (citation counts, review-paper detection, structure advice), and configure a local Ollama model in one command
+
+### akms mode *(gated)*
+- **Picker** — group papers into batches and NotebookLM notebooks
+- **Nodes** — browse, validate, and promote generated nodes
+- **Graph** — explore the compiled AKMS graph (filters, ego/cluster slices, inspector)
+- **Learn** *(in active testing)* — compile AKMS knowledge into learning artifacts; the UI is capability-driven, so generation modes and exporters come from the backend and any unavailable/planned mode renders disabled rather than failing on submit
+
+### assistant mode
+- **Discover** — search OpenAlex + Semantic Scholar and match results against your Zotero catalog
+- **Related papers** — citations / references / similar / co-citation / co-reference exploration
+- **Outputs** — browse, rerun, and compare workflow outputs
+- **Workspace search** — Cmd-K / Ctrl-K across batches, discovered abstracts, zsum cards/digests, AKMS nodes, and workflow outputs
 
 ## What is bundled in release builds
 
-Release builds are intended to bundle the pieces a tester should not need to install manually:
+Release builds bundle the pieces a tester should not need to install manually:
 
 - Logic-Loom desktop shell (Tauri + React)
 - `logic-loom-api` Python sidecar
-- `zotero-summarizer` package
-- Python runtime dependencies required by the sidecar
+- `zotero-summarizer` package and the Python runtime dependencies it needs
+- the `akms-learn` engine, so the Learn modes ship in the packaged app
+- the **MechDSL** executable bridge — compiles `% mechanics` LaTeX into FEM-solver code. It is bundled **Taichi-free**, so it adds this capability without the heavy Taichi runtime (only an opt-in `run_verify` step would need it, and that is gated off)
 
 ## What is not bundled
 
@@ -28,27 +52,29 @@ Logic-Loom still depends on your research environment:
 - Zotero
 - Better BibTeX export
 - local PDFs
-- an LLM provider or local model service
-- optional AKMS resources when using AKMS-specific tabs
+- an LLM provider or local model service (Ollama, LM Studio, Claude / Codex / Gemini CLIs, NotebookLM, or another OpenAI-compatible endpoint)
+- optional AKMS resources when using AKMS-gated tabs
 
 That distinction matters: Logic-Loom reduces setup friction, but it does not install Zotero, locate your papers by magic, or log into model providers on your behalf.
 
-## How Logic-Loom fits with zsum and AKMS
+## How Logic-Loom fits together
 
-Logic-Loom sits between two layers:
+Logic-Loom sits across a few layers:
 
-1. **zotero-summarizer** — the pipeline that extracts paper text, generates per-paper cards, synthesizes collection digests, and publishes an Obsidian vault.
-2. **AKMS** — an optional knowledge-graph layer for batch assignment, node generation, validation, and graph exploration.
+1. **zotero-summarizer** — extracts paper text, generates per-paper cards, synthesizes collection digests, and publishes an Obsidian vault.
+2. **AKMS** — an optional knowledge-graph layer for batch assignment, node generation, validation, graph exploration, and (new) Learn artifacts.
+3. **Assistant** — paper discovery and a workspace-wide search that tie the other layers together.
 
-If you only want the core summarization workflow, Logic-Loom can still be useful without AKMS.
+If you only want the core summarization workflow, Logic-Loom is still useful with just zsum.
 
 ## Current release posture
 
-The public release track is still early-stage. Expect a few practical realities:
+The latest public track is **v0.1.0-alpha.3** — *"Research Assistant (Learn), LLM providers, MechDSL bridge."* It is still early-stage; expect a few practical realities:
 
+- several capabilities (NotebookLM, section-aware extraction, enrichment commands, Learn) are shipped but **in active testing**
 - install steps may still include alpha-quality warnings and manual confirmations
 - first-run configuration can still surface expert-oriented settings
-- AKMS-related tabs may be gated when the supporting packages or source vault are unavailable
+- AKMS and Learn tabs may be gated when the supporting packages, a readable source vault, or an LLM provider are unavailable
 - exact platform coverage depends on the current GitHub Release assets
 
 For installation help, continue with the [install guide](install.md).

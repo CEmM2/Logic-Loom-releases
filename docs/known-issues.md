@@ -36,6 +36,23 @@ AKMS-related tabs and workflows are optional. Depending on the release and your 
 - graph features may need a readable source vault
 - batch/node workflows may require separate AKMS resources
 
+## Several newer features are in active testing
+
+As of **v0.1.0-alpha.3**, a number of capabilities are shipped but still being
+exercised. Treat them as evolving:
+
+- **Research Assistant — Learn** — the Learn tab and its generation modes are
+  new; available modes and exporters are driven by the backend, and some need a
+  host-supplied LLM provider (without one, those modes are disabled).
+- **NotebookLM pipeline / section-aware extraction / enrichment commands** — the
+  newer `zotero-summarizer` flows are available via the bundled CLI; Pipeline-UI
+  surfacing for some of them is still in progress.
+- **NotebookLM** in particular requires you to be signed in to Google in the
+  environment NotebookLM uses; Logic-Loom does not manage that authentication.
+- **MechDSL** emit/transpile works out of the box, but the optional
+  verification step needs a Taichi runtime that is **not bundled** and is gated
+  off by default.
+
 ## Platform parity is not guaranteed yet
 
 Public releases may not ship every operating system on every tag.
