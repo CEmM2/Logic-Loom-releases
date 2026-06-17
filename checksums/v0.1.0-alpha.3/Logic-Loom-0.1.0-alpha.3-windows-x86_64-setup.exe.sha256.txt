@@ -1,1 +1,1 @@
-dc13cbd5027f1a93b2975ee31a39fbd72fc82e293e3c08ba6c5e0f8cd4b1b7bf  Logic-Loom-0.1.0-alpha.3-windows-x86_64-setup.exe
+5f2931bb0274a02ae4cac15b8cf5b465438e9989592c918b05f841174a79a7ad  Logic-Loom-0.1.0-alpha.3-windows-x86_64-setup.exe

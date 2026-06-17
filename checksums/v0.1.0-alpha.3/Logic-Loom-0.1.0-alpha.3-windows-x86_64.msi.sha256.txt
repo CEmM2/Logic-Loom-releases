@@ -1,1 +1,1 @@
-2b76f459c748a631917a04499cfaf0d80b9cea1ddeca3a803ba3e1101abdec06  Logic-Loom-0.1.0-alpha.3-windows-x86_64.msi
+3a10f80f4f5727eac59baf9d77e95c8c661cb0849ae2d6fd93a49a210705e93b  Logic-Loom-0.1.0-alpha.3-windows-x86_64.msi
