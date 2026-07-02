@@ -1,0 +1,225 @@
+name: Build & Release Binaries
+
+# Public-side binary build for the two-repo release model.
+#
+# THIS repo (CEmM2/Logic-Loom-releases) owns the cross-platform binary build.
+# The private source lives in SOSOVSKI/Logic-Loom; this workflow checks it out
+# at the release tag via a PAT, builds macOS/Linux/Windows bundles on real
+# runners, and attaches them (plus SHA256SUMS) to the GitHub Release for the
+# tag on THIS repo. The source-only release is cut separately by the source
+# repo's `release.yml` on the same tag.
+#
+# Trigger: push a `v*` tag to THIS repo (e.g. `git push origin v0.1.0-alpha.5`).
+#
+# ── Required secret ──────────────────────────────────────────────────────────
+#   SOURCE_REPO_PAT — a fine-grained PAT with **read** access to
+#   SOSOVSKI/Logic-Loom "Contents". Used only to check out the private source
+#   at the tag. The Release itself is created with the built-in GITHUB_TOKEN.
+#
+# Out of scope (deliberate, follow-ups): macOS notarization, Windows
+# authenticode signing — both need org signing secrets.
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Source tag to build (must exist in SOSOVSKI/Logic-Loom, e.g. v0.1.0-alpha.5)."
+        required: true
+        default: "v0.0.0-manual"
+
+permissions:
+  contents: write  # create/update the Release on THIS repo
+
+env:
+  SOURCE_REPO: SOSOVSKI/Logic-Loom
+  # Resolve the tag once: the pushed tag, or the manual-dispatch input.
+  BUILD_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────────────
+  # Build per-OS artifacts in parallel from the private source at BUILD_TAG.
+  # Mirrors the matrix that previously lived in SOSOVSKI/Logic-Loom.
+  # ─────────────────────────────────────────────────────────────────────────
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            target: macos
+            artifact_glob: "apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg"
+          - os: ubuntu-latest
+            target: linux
+            artifact_glob: "apps/desktop/src-tauri/target/release/bundle/{deb,appimage}/*"
+          - os: windows-latest
+            target: windows
+            artifact_glob: "apps/desktop/src-tauri/target/release/bundle/{msi,nsis}/*"
+
+    steps:
+      - name: Checkout private source at tag
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ env.BUILD_TAG }}
+          token: ${{ secrets.SOURCE_REPO_PAT }}
+          # Vendored deps live in-tree (thirdparty/), no submodules needed.
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - uses: actions/setup-node@v4
+        with:
+          # pnpm 11 requires Node >= 22.13 (uses node:sqlite builtin).
+          node-version: "22"
+
+      - uses: pnpm/action-setup@v4
+        # Version comes from package.json's packageManager field.
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Sync Python deps (with logic-loom-api dev extras)
+        run: uv sync --package logic-loom-api --all-extras
+
+      - name: Sync curated AKMS Claude assets into resources/
+        run: uv run python scripts/sync_akms_claude_assets.py
+
+      - name: Run resources/ Nodes_Vault security guard
+        run: python3 scripts/check_resources_no_vault.py
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Cargo registry + Tauri target dir
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            apps/desktop/src-tauri/target
+          key: cargo-${{ matrix.os }}-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+          restore-keys: |
+            cargo-${{ matrix.os }}-
+
+      - name: Install Linux Tauri runtime dependencies
+        if: matrix.target == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            libwebkit2gtk-4.1-dev \
+            libappindicator3-dev \
+            librsvg2-dev \
+            patchelf \
+            libsoup-3.0-dev \
+            libglib2.0-dev
+
+      - name: Build (${{ matrix.target }})
+        shell: bash
+        run: pnpm logic-loom:package:${{ matrix.target }}
+
+      - name: Stage artifacts for upload
+        shell: bash
+        run: |
+          mkdir -p dist-${{ matrix.target }}
+          shopt -s nullglob
+          cp ${{ matrix.artifact_glob }} dist-${{ matrix.target }}/ || true
+          ls -lh dist-${{ matrix.target }}/
+
+      - name: Compute SHA256SUMS
+        shell: bash
+        run: |
+          cd dist-${{ matrix.target }}
+          if [ -z "$(ls -A)" ]; then
+            echo "::error::No artifacts produced for ${{ matrix.target }}"
+            exit 1
+          fi
+          if command -v sha256sum >/dev/null 2>&1; then
+            sha256sum * > SHA256SUMS
+          else
+            shasum -a 256 * > SHA256SUMS
+          fi
+          cat SHA256SUMS
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: logic-loom-${{ matrix.target }}
+          path: dist-${{ matrix.target }}/*
+          if-no-files-found: error
+          retention-days: 14
+
+  # ─────────────────────────────────────────────────────────────────────────
+  # Aggregate the three per-OS artifact sets onto the Release on THIS repo.
+  # Release notes are read from the private source at the tag.
+  # ─────────────────────────────────────────────────────────────────────────
+  publish:
+    name: Publish Binaries to Release
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+
+    steps:
+      - name: Checkout private source at tag (for release notes)
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.SOURCE_REPO }}
+          ref: ${{ env.BUILD_TAG }}
+          token: ${{ secrets.SOURCE_REPO_PAT }}
+          path: source
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist/
+
+      - name: Flatten artifact tree
+        run: |
+          mkdir -p release-assets
+          find dist/ -type f \
+            \( -name "*.dmg" -o -name "*.deb" -o -name "*.AppImage" \
+               -o -name "*.msi" -o -name "*.exe" -o -name "SHA256SUMS" \) \
+            -exec cp {} release-assets/ \;
+          # Per-OS SHA256SUMS collide on the same name; keep them distinct.
+          ls -lh release-assets/ || true
+
+      - name: Consolidate checksums
+        shell: bash
+        run: |
+          cd release-assets
+          rm -f SHA256SUMS
+          { command -v sha256sum >/dev/null 2>&1 && sha256sum * || shasum -a 256 *; } > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Locate release notes
+        id: notes
+        shell: bash
+        run: |
+          tag="${BUILD_TAG}"
+          notes_file="source/dev/release_notes/${tag}.md"
+          if [ -f "$notes_file" ]; then
+            echo "found=$notes_file" >> "$GITHUB_OUTPUT"
+            echo "Release notes located at $notes_file"
+          else
+            echo "found=" >> "$GITHUB_OUTPUT"
+            echo "::warning::No release notes at $notes_file — falling back to generic body."
+          fi
+
+      - name: Create / update Release with binaries
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.BUILD_TAG }}
+          name: Logic-Loom ${{ env.BUILD_TAG }}
+          files: release-assets/*
+          body_path: ${{ steps.notes.outputs.found }}
+          fail_on_unmatched_files: true
+          prerelease: ${{ contains(env.BUILD_TAG, '-alpha') || contains(env.BUILD_TAG, '-beta') || contains(env.BUILD_TAG, '-rc') }}
+          # GITHUB_TOKEN (contents: write) — release is on THIS repo.
