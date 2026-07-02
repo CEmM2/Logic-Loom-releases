@@ -1,0 +1,1 @@
+5c8687d68f10c4b05db40fd8da1bca3abc6714cef5533bad4b1ba6a70f04a947  Logic-Loom-0.1.0-alpha.5-windows-x86_64.msi

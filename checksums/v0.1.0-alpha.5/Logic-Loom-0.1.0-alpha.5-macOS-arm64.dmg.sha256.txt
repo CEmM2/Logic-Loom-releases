@@ -1,0 +1,1 @@
+1c7d1cc899f0215f244741f8115fac3a84b6026140c682b1edd520565f11d1da  Logic-Loom-0.1.0-alpha.5-macOS-arm64.dmg

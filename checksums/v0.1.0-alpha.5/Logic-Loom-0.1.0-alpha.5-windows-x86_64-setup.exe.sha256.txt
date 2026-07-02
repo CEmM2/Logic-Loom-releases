@@ -1,0 +1,1 @@
+c5904fd12584c0e39d8e72e9eebc0d7c2aba8fb825d58f8d69f1e23c18b2cb95  Logic-Loom-0.1.0-alpha.5-windows-x86_64-setup.exe
