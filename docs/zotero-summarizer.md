@@ -27,7 +27,7 @@ Inside Logic-Loom, the most important zsum flows are surfaced as desktop actions
 - watch logs while the pipeline runs
 - inspect the generated markdown without leaving the app
 
-## Newer zsum capabilities (v0.1.0-alpha.3, in active testing)
+## Newer zsum capabilities (in active testing)
 
 The bundled `zotero-summarizer` recently gained several capabilities. They are
 available through the CLI bundled with Logic-Loom today; Pipeline-UI surfacing

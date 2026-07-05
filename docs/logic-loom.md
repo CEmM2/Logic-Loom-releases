@@ -43,7 +43,8 @@ Release builds bundle the pieces a tester should not need to install manually:
 - `logic-loom-api` Python sidecar
 - `zotero-summarizer` package and the Python runtime dependencies it needs
 - the `akms-learn` engine, so the Learn modes ship in the packaged app
-- the **MechDSL** executable bridge — compiles `% mechanics` LaTeX into FEM-solver code. It is bundled **Taichi-free**, so it adds this capability without the heavy Taichi runtime (only an opt-in `run_verify` step would need it, and that is gated off)
+- a curated, read-only **library of established knowledge nodes** (Tier A) with provenance, plus ready-to-run **starter batches** (Tier B) seeded on first run
+- the **MechDSL** executable bridge — compiles `% mechanics` LaTeX into FEM-solver code. It is bundled **Taichi-free**, so it adds this capability without the heavy Taichi runtime (an opt-in verify step can provision Taichi on demand, and is gated off by default)
 
 ## What is not bundled
 
@@ -69,7 +70,14 @@ If you only want the core summarization workflow, Logic-Loom is still useful wit
 
 ## Current release posture
 
-The latest public track is **v0.1.0-alpha.3** — *"Research Assistant (Learn), LLM providers, MechDSL bridge."* It is still early-stage; expect a few practical realities:
+The current release line is **v0.1.0-alpha.6**. The feature arc through the recent alphas:
+
+- **alpha.3** — Research Assistant (Learn), LLM providers, MechDSL bridge
+- **alpha.4** — a **unified host-LLM provider** setting that drives Learn, zsum, and node generation from one place, plus packaged-app discovery of locally installed agent CLIs
+- **alpha.5** — a bundled, gated **curated library of established nodes** (Tier A) and **starter batches** (Tier B), with a draft→established promotion path
+- **alpha.6** — release-infrastructure cutover to the two-repo model (see [GitHub Releases workflow](github-releases.md)); no new app features
+
+It is still early-stage; expect a few practical realities:
 
 - several capabilities (NotebookLM, section-aware extraction, enrichment commands, Learn) are shipped but **in active testing**
 - install steps may still include alpha-quality warnings and manual confirmations

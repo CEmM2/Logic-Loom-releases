@@ -38,8 +38,8 @@ AKMS-related tabs and workflows are optional. Depending on the release and your 
 
 ## Several newer features are in active testing
 
-As of **v0.1.0-alpha.3**, a number of capabilities are shipped but still being
-exercised. Treat them as evolving:
+As of the **v0.1.0-alpha.6** line, a number of capabilities are shipped but still
+being exercised. Treat them as evolving:
 
 - **Research Assistant — Learn** — the Learn tab and its generation modes are
   new; available modes and exporters are driven by the backend, and some need a
