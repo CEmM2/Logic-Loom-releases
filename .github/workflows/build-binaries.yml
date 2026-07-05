@@ -46,6 +46,7 @@ jobs:
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    environment: private-source-build
     strategy:
       fail-fast: false
       matrix:
@@ -166,6 +167,7 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
+    environment: private-source-build
 
     steps:
       - name: Checkout private source at tag (for release notes)
