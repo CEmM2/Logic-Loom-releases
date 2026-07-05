@@ -1,52 +1,73 @@
 # GitHub Releases workflow
 
-This repository is the public distribution point for Logic-Loom binaries.
+Logic-Loom uses a **two-repo release model**. A release is a single version tag
+(`v*`) pushed to both repos; each repo's CI reacts to the tag differently.
+
+| Repo | Workflow | On a `v*` tag push it… |
+| --- | --- | --- |
+| `SOSOVSKI/Logic-Loom` (private source) | `.github/workflows/release.yml` | cuts a **source-only** GitHub Release — `Logic-Loom-<ver>-source.{tar.gz,zip}` + `SHA256SUMS`. No binaries. |
+| `CEmM2/Logic-Loom-releases` (this, public) | `.github/workflows/build-binaries.yml` | **builds the binaries** — checks out the private source at the tag via a PAT, builds macOS/Linux/Windows bundles on real runners, and attaches them (plus `SHA256SUMS.txt`) to the Release for that tag here. |
+
+Both workflows read the release body from `dev/release_notes/<tag>.md` in the
+source repo, and auto-mark `*-alpha` / `*-beta` / `*-rc` tags as prereleases.
 
 ## Latest release link
 
 - <https://github.com/CEmM2/Logic-Loom-releases/releases/latest>
 
-## What a release should contain
+## What a public release contains
 
-Each GitHub Release should bundle the user-facing materials that let someone download and trust the build:
+Each GitHub Release on this repo attaches:
 
-- platform binaries/installers
-- release notes
-- checksum manifest
-- install instructions
-- known issues / caveats
+- platform binaries/installers (macOS `.dmg`, Linux `.deb` + `.AppImage`, Windows `.msi` + NSIS `.exe`)
+- a `SHA256SUMS.txt` manifest covering those assets
+- the release notes as the body
 
-That is why this repository keeps those materials in versioned markdown and checksum folders rather than burying them in the private implementation repo.
+Verify a download with:
 
-## Recommended release checklist
+```bash
+shasum -a 256 -c SHA256SUMS.txt
+```
 
-Before publishing a new release:
+## Required secret (this repo)
 
-1. Build and smoke-test the platform artifact(s).
-2. Copy or generate the final checksum manifest.
-3. Update the matching file under `release-notes/`.
-4. Confirm the release notes reflect the actual platform assets being uploaded.
-5. Link to or summarize any important install notes and known issues.
-6. Draft the GitHub Release and upload the assets plus checksum manifest.
+`build-binaries.yml` needs **`SOURCE_REPO_PAT`** — a fine-grained PAT with
+**read** access to `SOSOVSKI/Logic-Loom` *Contents* — configured under
+Settings → Secrets → Actions. It is used only to check out the private source at
+the tag. The Release itself is created with the built-in `GITHUB_TOKEN`.
 
-Most of these steps are now automated by a single script in the implementation
-repository (`scripts/release.sh`): it picks up the CI-built binaries, normalizes
-their filenames, stages them plus checksum manifests into this release repo,
-ships versioned copies of `README.md` and `CHANGELOG.md` as attached assets, and
-creates the GitHub Release. The checklist above remains the underlying recipe.
+## Cutting a release
 
-## Suggested repository mapping
+From the source repo, `scripts/release.sh` pushes the tag to both repos in order
+(source first, then this mirror), idempotently:
 
-- `release-notes/<version>.md` — release body text to paste into GitHub Releases
-- `checksums/<version>/SHA256SUMS.txt` — checksum manifest for that release
+```bash
+bash scripts/release.sh --tag v0.1.0-alpha.7            # tag both repos → both workflows fire
+bash scripts/release.sh --tag v0.1.0-alpha.7 --watch    # also watch the binary build here
+bash scripts/release.sh --tag v0.1.0-alpha.7 --dry-run  # print the plan, change nothing
+```
+
+Add `dev/release_notes/<tag>.md` in the source repo before tagging — both
+workflows use it as the release body.
+
+## Repository layout
+
+- `release-notes/<version>.md` — published release-note copy
+- `checksums/<version>/` — checksum manifests from the older manual model (through alpha.5)
+- `staging/<version>/` — staged binaries from the older manual model (through alpha.5)
 - `docs/install.md` — stable install guidance
 - `docs/known-issues.md` — cross-release caveats and limitations
 
-## Why keep releases here
+> **Historical note:** through **alpha.5**, binaries were built in the source
+> repo's CI, downloaded, and committed into this repo's `staging/` + `checksums/`
+> folders by an older `scripts/release.sh`. As of the **alpha.6** cutover, CI in
+> this repo builds the binaries and attaches them directly to the GitHub Release,
+> so those folders are frozen historical artifacts rather than the live source of
+> downloads. Always get binaries from the **Releases** page, not the repo tree.
 
-The public release repo cleanly separates:
+## Why the split
 
-- **public binaries and user docs**
-- **private or implementation-heavy source work**
-
-That avoids sending testers to a source repository they may not be able to access and gives the project a stable, public download target.
+The two-repo model cleanly separates **public binaries + user docs** from
+**private implementation source**, and lets binaries build on public runners
+without exposing the source tree — while still giving testers a stable, public
+download target.

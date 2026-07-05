@@ -74,7 +74,9 @@ Prerequisites:
 - Visual Studio C++ Build Tools
 - Microsoft Edge WebView2 runtime
 - `uv`
-- a sibling checkout of `zotero-summarizer` at `..\zotero-summarizer`
+
+The Python dependencies (`zotero-summarizer`, AKMS) are **vendored in-tree** under
+`thirdparty/`, so no sibling checkouts are required.
 
 From PowerShell in the source repo root:
 
@@ -115,7 +117,6 @@ Typical prerequisites:
 - pnpm 11
 - Rust stable
 - `uv`
-- a sibling checkout of `../zotero-summarizer`
 - distro packages for the Tauri GTK/WebKit stack such as `build-essential`,
   `pkg-config`, `libgtk-3-dev`, `libwebkit2gtk-4.1-dev`,
   `libayatana-appindicator3-dev`, `librsvg2-dev`, and `patchelf`

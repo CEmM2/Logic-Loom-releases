@@ -41,15 +41,26 @@ That includes:
 
 When the supporting AKMS resources are available, Logic-Loom may expose:
 
+- **Batches** — ready-to-run starter batches plus your own batch definitions
 - **Picker** — batch selection and notebook-oriented paper grouping
-- **Nodes** — generated-node browsing, validation, and review
+- **Nodes** — generated-node browsing, validation, and review, with a bundled curated library of established nodes
 - **Graph** — read-only graph exploration based on AKMS core data
 - **Learn** *(in active testing)* — compile AKMS knowledge into learning artifacts
+
+## Curated node library and starter batches
+
+As of **v0.1.0-alpha.5**, the app ships two seeded layers so the AKMS tabs are useful the moment they unlock:
+
+- **Established node library (Tier A)** — a read-only, versioned set of vetted knowledge nodes, unioned into the graph as a second source with provenance and tier stamped on each node. A build guard refuses to bundle anything not marked `status: established`, so the shipped library is authoritative by construction. The UI badges **Established vs Draft/Generated**, offers a **report-an-error** path, and a **copy-to-my-vault** action to fork an established node into your own editable workspace.
+- **Starter batches (Tier B)** — a starter-batch seed pack dropped into your AKMS workspace on first run, framed clearly as draft/generated content that is yours to run and edit — never co-mingled with the Tier-A library.
+
+Established content grows through a **draft→established promotion path**: a reviewed draft is validated against the schema, stamped `status: established`, given a provenance sidecar, and filed into the curated tree — with the build guard as the mechanical backstop.
 
 ## AKMS Learn
 
 As of **v0.1.0-alpha.3**, Logic-Loom ships a **Learn** tab backed by the vendored
-`akms-learn` engine. Given a slice of the AKMS graph and a learning request, it
+`akms-learn` engine. From **alpha.4** on, the modes that need an LLM are driven by
+the single unified provider setting (see the [overview](logic-loom.md)). Given a slice of the AKMS graph and a learning request, it
 compiles a **Learning Source Packet (LSP)** — a reproducible artifact with a
 reading order, per-node section extraction, pitfalls, assessment items, code
 links, and a validation block — and exports it in a chosen format.
