@@ -1,18 +1,13 @@
-# Release notes
+# Release notes (archive)
 
-Store one markdown file per release tag in this folder.
+This folder is a **historical archive** covering `v0.1.0-alpha.1` through
+`v0.1.0-alpha.5`, from the manual release model.
 
-Recommended naming:
+As of the **alpha.6** cutover, release notes are no longer stored here. They are
+authored in the private source repo under `dev/release_notes/<tag>.md`, and both
+release workflows publish that file as the GitHub Release body when the tag is
+pushed — see [GitHub Releases workflow](../docs/github-releases.md).
 
-- `v0.1.0-alpha.1.md`
-- `v0.1.0-alpha.2.md`
-- `v0.1.0-beta.1.md`
+For the notes of any current release, read the release itself:
 
-These files serve two purposes:
-
-1. version-controlled release history inside the repo
-2. draft body text for GitHub Releases
-
-Current starter draft:
-
-- [`v0.1.0-alpha.1.md`](v0.1.0-alpha.1.md)
+- <https://github.com/CEmM2/Logic-Loom-releases/releases>
