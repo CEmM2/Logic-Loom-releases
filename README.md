@@ -14,7 +14,12 @@ Logic-Loom is a **three-mode desktop shell** for research workflows:
 - **akms** *(gated)* — optional [AKMS](https://github.com/SOSOVSKI/AKMS) knowledge-graph tooling: batch node generation, a read-only graph explorer, a **Learn** tab, and a bundled **curated library of established nodes**.
 - **assistant** — paper discovery across OpenAlex + Semantic Scholar, source batches, workflow runs, and a workspace-wide **⌘K / Ctrl-K** search.
 
-Current release line: **v0.1.0-alpha.6**.
+Current release line: **v0.1.0-alpha.7**.
+
+> **Upgrading from alpha.5 or alpha.6?** Those builds crashed the moment you ran
+> any Zotero pipeline stage (`unrecognized arguments: -m logic_loom_api._zsum_launcher …`).
+> alpha.7 fixes it, and repairs the stale setting the old builds could save — no
+> manual config edit needed.
 
 ## Download
 
@@ -26,10 +31,10 @@ Release binaries live in **GitHub Releases**, not in this repo's tree and not in
 ## What lives in this repo
 
 - `docs/` — public product docs, install guidance, AKMS/zsum context, and the release workflow
-- `release-notes/` — published release notes by version
+- `release-notes/` — archived release notes through alpha.5
 - `checksums/` — checksum manifests and verification guidance
 
-> **Note:** the `staging/` and `checksums/` folders hold artifacts from the older manual release model (through alpha.5). As of the alpha.6 line, binaries are built by CI and attached directly to each GitHub Release — see [docs/github-releases.md](docs/github-releases.md).
+> **Note:** the `staging/`, `checksums/`, and `release-notes/` folders hold artifacts from the older manual release model (through alpha.5). As of the alpha.6 line, binaries are built by CI and attached directly to each GitHub Release, and the release body is published from the source repo — see [docs/github-releases.md](docs/github-releases.md).
 
 ## Start here
 

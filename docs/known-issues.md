@@ -38,7 +38,7 @@ AKMS-related tabs and workflows are optional. Depending on the release and your 
 
 ## Several newer features are in active testing
 
-As of the **v0.1.0-alpha.6** line, a number of capabilities are shipped but still
+As of the **v0.1.0-alpha.7** line, a number of capabilities are shipped but still
 being exercised. Treat them as evolving:
 
 - **Research Assistant — Learn** — the Learn tab and its generation modes are
@@ -59,6 +59,22 @@ Public releases may not ship every operating system on every tag.
 
 Check the actual assets attached to the relevant GitHub Release rather than assuming that macOS, Windows, and Linux builds are always present together.
 
+## Fixed in v0.1.0-alpha.7 (affects alpha.5 and alpha.6 installs)
+
+Packaged alpha.5 and alpha.6 builds could not run **any** Zotero pipeline stage.
+Clicking Run failed immediately with:
+
+```text
+logic-loom-api: error: unrecognized arguments: -m logic_loom_api._zsum_launcher cards
+```
+
+Upgrading to alpha.7 is the fix. If you saved Settings while on alpha.5 or
+alpha.6, the broken command was persisted to
+`~/.config/logic-loom/config.toml` — alpha.7 detects that specific stale value
+on load and regenerates the working default, so **no manual edit is required**.
+A custom command pointing at a real external interpreter is left untouched.
+
 ## Release-note rule of thumb
 
-If a limitation is version-specific, it should also be repeated in that release's note under `release-notes/`.
+If a limitation is version-specific, it should also be called out in that
+release's notes on the [GitHub Release](https://github.com/CEmM2/Logic-Loom-releases/releases).

@@ -5,7 +5,7 @@ This repository is the public documentation and binary-distribution home for Log
 Logic-Loom is a **three-mode desktop shell** — `zsum` (the research pipeline),
 `akms` (optional knowledge-graph tooling, including the **Learn** tab and a
 bundled curated node library), and `assistant` (paper discovery + workspace
-search). The current release line is **v0.1.0-alpha.6**; grab whatever is newest
+search). The current release line is **v0.1.0-alpha.7**; grab whatever is newest
 from [Releases](https://github.com/CEmM2/Logic-Loom-releases/releases/latest).
 
 Use the pages below depending on what you need:
@@ -24,7 +24,7 @@ Use the pages below depending on what you need:
 The public release repo is intentionally lightweight:
 
 - **GitHub Releases** host the binaries
-- **`release-notes/`** stores the versioned release-note markdown
+- **`release-notes/`** archives the pre-alpha.6 release-note markdown (newer notes are published straight to the GitHub Release)
 - **`checksums/`** stores checksum manifests and verification guidance
 - **`docs/`** gives public-facing product and install documentation
 

@@ -70,12 +70,13 @@ If you only want the core summarization workflow, Logic-Loom is still useful wit
 
 ## Current release posture
 
-The current release line is **v0.1.0-alpha.6**. The feature arc through the recent alphas:
+The current release line is **v0.1.0-alpha.7**. The feature arc through the recent alphas:
 
 - **alpha.3** — Research Assistant (Learn), LLM providers, MechDSL bridge
 - **alpha.4** — a **unified host-LLM provider** setting that drives Learn, zsum, and node generation from one place, plus packaged-app discovery of locally installed agent CLIs
 - **alpha.5** — a bundled, gated **curated library of established nodes** (Tier A) and **starter batches** (Tier B), with a draft→established promotion path
 - **alpha.6** — release-infrastructure cutover to the two-repo model (see [GitHub Releases workflow](github-releases.md)); no new app features
+- **alpha.7** — the **Zotero pipeline runs in packaged builds again**: a frozen sidecar has no `python -m`, so every pipeline stage died at argument parsing on alpha.5/alpha.6. Bundled modules are now re-entered through a frozen-aware path, and a stale saved setting from those builds is repaired automatically. No UI or API surface changed.
 
 It is still early-stage; expect a few practical realities:
 
