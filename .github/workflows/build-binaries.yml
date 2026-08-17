@@ -85,6 +85,42 @@ jobs:
       - name: Install uv
         run: pip install uv
 
+      - name: Authenticate to the private AKMS repository
+        shell: bash
+        env:
+          AKMS_READ_TOKEN: ${{ secrets.AKMS_READ_TOKEN }}
+          SOURCE_REPO_PAT: ${{ secrets.SOURCE_REPO_PAT }}
+        run: |
+          # The sync below installs `akms` and `akms-failure-memory` from the
+          # PRIVATE SOSOVSKI/AKMS repository, pinned by commit in the source
+          # tree's [tool.uv.sources]. uv shells out to a plain `git fetch`, which
+          # carries no credentials here, so the clone dies with:
+          #   fatal: could not read Username for 'https://github.com'
+          #
+          # Rewriting the URL injects the token without altering the pinned URL,
+          # so the commit pin stays exactly as the source tree declares it.
+          #
+          # This only became necessary from v0.2.0 onward: the failure-memory
+          # integration introduced the private dependency, and v0.1.0-alpha.7 --
+          # the last binary build to succeed -- had no reference to SOSOVSKI/AKMS
+          # at all.
+          #
+          # Prefer a dedicated read-only token; fall back to the PAT already used
+          # to check out the private source, which suffices when it is repo-scoped.
+          TOKEN="${AKMS_READ_TOKEN:-$SOURCE_REPO_PAT}"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::No token available to clone the private SOSOVSKI/AKMS repository. Add a fine-grained PAT with Contents:Read on SOSOVSKI/AKMS as the secret AKMS_READ_TOKEN on this repository (or the CEmM2 organization). SOURCE_REPO_PAT is also accepted if it is repo-scoped."
+            exit 1
+          fi
+          if [ -n "$AKMS_READ_TOKEN" ]; then
+            echo "Using AKMS_READ_TOKEN for the private AKMS clone."
+          else
+            echo "AKMS_READ_TOKEN is not set; falling back to SOURCE_REPO_PAT."
+          fi
+          git config --global \
+            url."https://x-access-token:${TOKEN}@github.com/".insteadOf \
+            "https://github.com/"
+
       - name: Sync Python deps (with logic-loom-api dev extras)
         run: uv sync --package logic-loom-api --all-extras
 
