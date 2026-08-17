@@ -88,8 +88,8 @@ jobs:
       - name: Authenticate to the private AKMS repository
         shell: bash
         env:
+          LL_READ_AK: ${{ secrets.LL_READ_AK }}
           AKMS_READ_TOKEN: ${{ secrets.AKMS_READ_TOKEN }}
-          SOURCE_REPO_PAT: ${{ secrets.SOURCE_REPO_PAT }}
         run: |
           # The sync below installs `akms` and `akms-failure-memory` from the
           # PRIVATE SOSOVSKI/AKMS repository, pinned by commit in the source
@@ -105,17 +105,21 @@ jobs:
           # the last binary build to succeed -- had no reference to SOSOVSKI/AKMS
           # at all.
           #
-          # Prefer a dedicated read-only token; fall back to the PAT already used
-          # to check out the private source, which suffices when it is repo-scoped.
-          TOKEN="${AKMS_READ_TOKEN:-$SOURCE_REPO_PAT}"
+          # Needs a token with Contents:Read on SOSOVSKI/AKMS. SOURCE_REPO_PAT is
+          # deliberately NOT accepted here: it is fine-grained to the Logic-Loom
+          # source repo, so git sends it and GitHub rejects the fetch with
+          #   remote: Write access to repository not granted.  ... error: 403
+          # which reads like a permissions request rather than a missing secret.
+          # Failing loudly on an absent token is clearer than that 403.
+          TOKEN="${LL_READ_AK:-$AKMS_READ_TOKEN}"
           if [ -z "$TOKEN" ]; then
-            echo "::error::No token available to clone the private SOSOVSKI/AKMS repository. Add a fine-grained PAT with Contents:Read on SOSOVSKI/AKMS as the secret AKMS_READ_TOKEN on this repository (or the CEmM2 organization). SOURCE_REPO_PAT is also accepted if it is repo-scoped."
+            echo "::error::No token available to clone the private SOSOVSKI/AKMS repository. Add a fine-grained PAT with Contents:Read on SOSOVSKI/AKMS as the secret LL_READ_AK on this repository (or the CEmM2 organization)."
             exit 1
           fi
-          if [ -n "$AKMS_READ_TOKEN" ]; then
-            echo "Using AKMS_READ_TOKEN for the private AKMS clone."
+          if [ -n "$LL_READ_AK" ]; then
+            echo "Using LL_READ_AK for the private AKMS clone."
           else
-            echo "AKMS_READ_TOKEN is not set; falling back to SOURCE_REPO_PAT."
+            echo "LL_READ_AK is not set; using AKMS_READ_TOKEN."
           fi
           git config --global \
             url."https://x-access-token:${TOKEN}@github.com/".insteadOf \
