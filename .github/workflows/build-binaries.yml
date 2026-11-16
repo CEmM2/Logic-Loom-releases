@@ -37,6 +37,9 @@ env:
   SOURCE_REPO: CEmM2/Logic-Loom
   # Resolve the tag once: the pushed tag, or the manual-dispatch input.
   BUILD_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+  # Newest glibc symbol version any shipped Linux ELF may require. 2.35 is
+  # Ubuntu 22.04; it covers Ubuntu 22.04/24.04 and Debian 12/13.
+  GLIBC_FLOOR: "2.35"
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────
@@ -52,7 +55,17 @@ jobs:
           - os: macos-latest
             target: macos
             artifact_glob: "apps/desktop/src-tauri/target/release/bundle/dmg/*.dmg"
-          - os: ubuntu-latest
+          # Linux is pinned to the OLDEST supported runner, not ubuntu-latest.
+          # A Linux binary needs a glibc at least as new as the one it was
+          # linked against, and v0.3.0 was built on ubuntu-latest (glibc 2.43),
+          # so it refused to start on Debian 13 (2.41) and Ubuntu 24.04 (2.39).
+          # ubuntu-22.04 (glibc 2.35) is also the oldest base that ships
+          # webkit2gtk-4.1, which Tauri 2 needs. The "Check Linux glibc floor"
+          # step below fails the build if anything shipped needs more than
+          # GLIBC_FLOOR. When GitHub retires this image, keep the floor by
+          # running the job in an `ubuntu:22.04` container instead of moving
+          # to a newer runner.
+          - os: ubuntu-22.04
             target: linux
             artifact_glob: "apps/desktop/src-tauri/target/release/bundle/{deb,appimage}/*"
           - os: windows-latest
@@ -123,6 +136,80 @@ jobs:
       - name: Build (${{ matrix.target }})
         shell: bash
         run: pnpm logic-loom:package:${{ matrix.target }}
+
+      - name: Check Linux glibc floor and bundled WebKitGTK
+        if: matrix.target == 'linux'
+        shell: bash
+        run: |
+          set -euo pipefail
+          bundle=apps/desktop/src-tauri/target/release/bundle
+          sidecar=apps/desktop/src-tauri/binaries/logic-loom-api
+          work="$RUNNER_TEMP/glibc-check"
+          rm -rf "$work" && mkdir -p "$work/deb"
+
+          # Highest GLIBC_x.y version REQUIRED (the ELF "Version References",
+          # not versions a library defines) by any ELF file under $1.
+          max_glibc() {
+            find "$1" -type f -print0 | while IFS= read -r -d '' f; do
+              [ "$(head -c4 "$f" | od -An -tx1 | tr -d ' \n')" = "7f454c46" ] || continue
+              objdump -p "$f" 2>/dev/null | sed -n '/^Version References:/,/^$/p' \
+                | grep -oE 'GLIBC_[0-9]+\.[0-9]+(\.[0-9]+)?' || true
+            done | sed 's/^GLIBC_//' | sort -uV | tail -n1
+          }
+          fail=0
+          check() {  # label, path
+            local found
+            found="$(max_glibc "$2")"
+            echo "$1: needs glibc ${found:-none} (floor $GLIBC_FLOOR)"
+            if [ -n "$found" ] && [ "$(printf '%s\n%s\n' "$found" "$GLIBC_FLOOR" | sort -V | tail -n1)" != "$GLIBC_FLOOR" ]; then
+              echo "::error::$1 needs glibc $found, newer than the floor $GLIBC_FLOOR"
+              fail=1
+            fi
+          }
+
+          appimage="$(ls "$bundle"/appimage/*.AppImage | head -n1)"
+          deb="$(ls "$bundle"/deb/*.deb | head -n1)"
+          chmod +x "$appimage"
+          ( cd "$work" && "$GITHUB_WORKSPACE/$appimage" --appimage-extract >/dev/null )
+          dpkg-deb -x "$deb" "$work/deb"
+
+          check "AppImage ($(basename "$appimage"))" "$work/squashfs-root"
+          check "deb ($(basename "$deb"))" "$work/deb"
+          check "sidecar" "$sidecar"
+
+          # The AppImage must carry its own WebKitGTK, so it runs on systems
+          # where the distro package is missing or cannot be installed. The
+          # .deb deliberately depends on the distro's libwebkit2gtk-4.1-0.
+          if find "$work/squashfs-root" -name 'libwebkit2gtk-4.1.so*' | grep -q .; then
+            echo "AppImage bundles WebKitGTK: yes"
+          else
+            echo "::error::AppImage does not bundle libwebkit2gtk-4.1"
+            fail=1
+          fi
+          echo "deb Depends: $(dpkg-deb -f "$deb" Depends)"
+          exit "$fail"
+
+      - name: Smoke-test the Linux sidecar on a clean older distro
+        if: matrix.target == 'linux'
+        shell: bash
+        run: |
+          # The sidecar is a PyInstaller one-file binary: the libraries it
+          # unpacks at run time are not visible to the objdump scan above, so
+          # run it in a bare Debian 12 container (glibc 2.36, nothing from the
+          # build host) and wait for the handshake line the desktop shell needs.
+          set -euo pipefail
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE/apps/desktop/src-tauri/binaries:/opt/ll:ro" \
+            -e HOME=/tmp debian:12-slim \
+            bash -c 'timeout 180 /opt/ll/logic-loom-api --auto-port > /tmp/out.log 2>&1 & pid=$!
+              for _ in $(seq 1 180); do
+                if grep -q "^LOGIC_LOOM_API_READY:" /tmp/out.log; then
+                  grep "^LOGIC_LOOM_API_READY:" /tmp/out.log; kill "$pid" || true; exit 0
+                fi
+                kill -0 "$pid" 2>/dev/null || break
+                sleep 1
+              done
+              echo "sidecar did not reach the handshake:"; cat /tmp/out.log; exit 1'
 
       - name: Stage artifacts for upload
         shell: bash
