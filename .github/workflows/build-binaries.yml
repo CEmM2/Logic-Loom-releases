@@ -1,23 +1,23 @@
 name: Build & Release Binaries
 
-# Public-side binary build for the two-repo release model.
+# Binary build for the two-repo release model.
 #
 # THIS repo (CEmM2/Logic-Loom-releases) owns the cross-platform binary build.
-# The private source lives in SOSOVSKI/Logic-Loom; this workflow checks it out
-# at the release tag via a PAT, builds macOS/Linux/Windows bundles on real
-# runners, and attaches them (plus SHA256SUMS) to the GitHub Release for the
-# tag on THIS repo. The source-only release is cut separately by the source
-# repo's `release.yml` on the same tag.
+# The source is the public repository CEmM2/Logic-Loom; this workflow checks it
+# out at the release tag, builds macOS/Linux/Windows bundles on real runners,
+# and attaches them (plus SHA256SUMS.txt) to the GitHub Release for the tag on
+# THIS repo. The source-only release is cut separately by the source repo's
+# `release.yml` on the same tag.
 #
-# Trigger: push a `v*` tag to THIS repo (e.g. `git push origin v0.1.0-alpha.5`).
+# Trigger: push a `v*` tag to THIS repo (e.g. `git push origin v0.3.0`).
+# A manual run builds any ref of the source repo (a tag, or `main`) on all
+# three systems WITHOUT publishing, which is the dry run to do before tagging.
 #
-# ── Required secret ──────────────────────────────────────────────────────────
-#   SOURCE_REPO_PAT — a fine-grained PAT with **read** access to
-#   SOSOVSKI/Logic-Loom "Contents". Used only to check out the private source
-#   at the tag. The Release itself is created with the built-in GITHUB_TOKEN.
+# No secrets are needed: the source and every Python dependency (AKMS, MechDSL,
+# zotero-summarizer) are public, and the Release is created with GITHUB_TOKEN.
 #
 # Out of scope (deliberate, follow-ups): macOS notarization, Windows
-# authenticode signing — both need org signing secrets.
+# authenticode signing. Both need org signing secrets.
 
 on:
   push:
@@ -26,27 +26,25 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Source tag to build (must exist in SOSOVSKI/Logic-Loom, e.g. v0.1.0-alpha.5)."
+        description: "Ref of CEmM2/Logic-Loom to build: a release tag (v0.3.0) or a branch (main). Manual runs never publish."
         required: true
-        default: "v0.0.0-manual"
+        default: "main"
 
 permissions:
-  contents: write  # create/update the Release on THIS repo
+  contents: read
 
 env:
-  SOURCE_REPO: SOSOVSKI/Logic-Loom
+  SOURCE_REPO: CEmM2/Logic-Loom
   # Resolve the tag once: the pushed tag, or the manual-dispatch input.
   BUILD_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 
 jobs:
   # ─────────────────────────────────────────────────────────────────────────
-  # Build per-OS artifacts in parallel from the private source at BUILD_TAG.
-  # Mirrors the matrix that previously lived in SOSOVSKI/Logic-Loom.
+  # Build per-OS artifacts in parallel from the public source at BUILD_TAG.
   # ─────────────────────────────────────────────────────────────────────────
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
-    environment: private-source-build
     strategy:
       fail-fast: false
       matrix:
@@ -62,13 +60,12 @@ jobs:
             artifact_glob: "apps/desktop/src-tauri/target/release/bundle/{msi,nsis}/*"
 
     steps:
-      - name: Checkout private source at tag
+      - name: Checkout source at tag
         uses: actions/checkout@v4
         with:
           repository: ${{ env.SOURCE_REPO }}
           ref: ${{ env.BUILD_TAG }}
-          token: ${{ secrets.SOURCE_REPO_PAT }}
-          # Vendored deps live in-tree (thirdparty/), no submodules needed.
+          persist-credentials: false
 
       - uses: actions/setup-python@v5
         with:
@@ -85,48 +82,8 @@ jobs:
       - name: Install uv
         run: pip install uv
 
-      - name: Authenticate to the private AKMS repository
-        shell: bash
-        env:
-          LL_READ_AK: ${{ secrets.LL_READ_AK }}
-          AKMS_READ_TOKEN: ${{ secrets.AKMS_READ_TOKEN }}
-        run: |
-          # The sync below installs `akms` and `akms-failure-memory` from the
-          # PRIVATE SOSOVSKI/AKMS repository, pinned by commit in the source
-          # tree's [tool.uv.sources]. uv shells out to a plain `git fetch`, which
-          # carries no credentials here, so the clone dies with:
-          #   fatal: could not read Username for 'https://github.com'
-          #
-          # Rewriting the URL injects the token without altering the pinned URL,
-          # so the commit pin stays exactly as the source tree declares it.
-          #
-          # This only became necessary from v0.2.0 onward: the failure-memory
-          # integration introduced the private dependency, and v0.1.0-alpha.7 --
-          # the last binary build to succeed -- had no reference to SOSOVSKI/AKMS
-          # at all.
-          #
-          # Needs a token with Contents:Read on SOSOVSKI/AKMS. SOURCE_REPO_PAT is
-          # deliberately NOT accepted here: it is fine-grained to the Logic-Loom
-          # source repo, so git sends it and GitHub rejects the fetch with
-          #   remote: Write access to repository not granted.  ... error: 403
-          # which reads like a permissions request rather than a missing secret.
-          # Failing loudly on an absent token is clearer than that 403.
-          TOKEN="${LL_READ_AK:-$AKMS_READ_TOKEN}"
-          if [ -z "$TOKEN" ]; then
-            echo "::error::No token available to clone the private SOSOVSKI/AKMS repository. Add a fine-grained PAT with Contents:Read on SOSOVSKI/AKMS as the secret LL_READ_AK on this repository (or the CEmM2 organization)."
-            exit 1
-          fi
-          if [ -n "$LL_READ_AK" ]; then
-            echo "Using LL_READ_AK for the private AKMS clone."
-          else
-            echo "LL_READ_AK is not set; using AKMS_READ_TOKEN."
-          fi
-          git config --global \
-            url."https://x-access-token:${TOKEN}@github.com/".insteadOf \
-            "https://github.com/"
-
       - name: Sync Python deps (with logic-loom-api dev extras)
-        run: uv sync --package logic-loom-api --all-extras
+        run: uv sync --locked --package logic-loom-api --all-extras
 
       - name: Sync curated AKMS Claude assets into resources/
         run: uv run python scripts/sync_akms_claude_assets.py
@@ -200,22 +157,23 @@ jobs:
 
   # ─────────────────────────────────────────────────────────────────────────
   # Aggregate the three per-OS artifact sets onto the Release on THIS repo.
-  # Release notes are read from the private source at the tag.
+  # Release notes are read from the source at the tag.
   # ─────────────────────────────────────────────────────────────────────────
   publish:
     name: Publish Binaries to Release
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
-    environment: private-source-build
+    permissions:
+      contents: write  # create/update the Release on THIS repo
 
     steps:
-      - name: Checkout private source at tag (for release notes)
+      - name: Checkout source at tag (for release notes)
         uses: actions/checkout@v4
         with:
           repository: ${{ env.SOURCE_REPO }}
           ref: ${{ env.BUILD_TAG }}
-          token: ${{ secrets.SOURCE_REPO_PAT }}
+          persist-credentials: false
           path: source
 
       - name: Download all artifacts
@@ -246,7 +204,7 @@ jobs:
         shell: bash
         run: |
           tag="${BUILD_TAG}"
-          notes_file="source/dev/release_notes/${tag}.md"
+          notes_file="source/docs/release_notes/${tag}.md"
           if [ -f "$notes_file" ]; then
             echo "found=$notes_file" >> "$GITHUB_OUTPUT"
             echo "Release notes located at $notes_file"
