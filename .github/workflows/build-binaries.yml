@@ -133,6 +133,15 @@ jobs:
             libsoup-3.0-dev \
             libglib2.0-dev
 
+      # The cargo cache above restores the whole Tauri target dir, including
+      # target/release/bundle, so installers from the previous release would
+      # otherwise be staged and published next to the new ones (v0.3.1
+      # shipped stray 0.3.0 .dmg/.exe/.msi files this way). Start each build
+      # with an empty bundle dir; compiled crates stay cached.
+      - name: Clear stale bundles restored from the cache
+        shell: bash
+        run: rm -rf apps/desktop/src-tauri/target/release/bundle
+
       - name: Build (${{ matrix.target }})
         shell: bash
         run: pnpm logic-loom:package:${{ matrix.target }}
@@ -218,6 +227,18 @@ jobs:
           shopt -s nullglob
           cp ${{ matrix.artifact_glob }} dist-${{ matrix.target }}/ || true
           ls -lh dist-${{ matrix.target }}/
+          # On a release tag, every staged file must carry that version.
+          if [[ "$BUILD_TAG" =~ ^v[0-9] ]]; then
+            ver="${BUILD_TAG#v}"
+            bad=0
+            for f in dist-${{ matrix.target }}/*; do
+              case "$(basename "$f")" in
+                *"_${ver}_"*) ;;
+                *) echo "::error::$(basename "$f") is not a $ver artifact"; bad=1 ;;
+              esac
+            done
+            exit "$bad"
+          fi
 
       - name: Compute SHA256SUMS
         shell: bash
