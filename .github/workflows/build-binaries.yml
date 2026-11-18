@@ -74,22 +74,22 @@ jobs:
 
     steps:
       - name: Checkout source at tag
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ env.SOURCE_REPO }}
           ref: ${{ env.BUILD_TAG }}
           persist-credentials: false
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v7
         with:
           # pnpm 11 requires Node >= 22.13 (uses node:sqlite builtin).
           node-version: "22"
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6
         # Version comes from package.json's packageManager field.
 
       - name: Install uv
@@ -111,7 +111,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Cargo registry + Tauri target dir
-        uses: actions/cache@v4
+        uses: actions/cache@v6
         with:
           path: |
             ~/.cargo/registry
@@ -248,15 +248,17 @@ jobs:
             echo "::error::No artifacts produced for ${{ matrix.target }}"
             exit 1
           fi
+          # Written outside the folder first so the per-OS manifest never lists itself.
           if command -v sha256sum >/dev/null 2>&1; then
-            sha256sum * > SHA256SUMS
+            sha256sum -- * > ../SHA256SUMS.tmp
           else
-            shasum -a 256 * > SHA256SUMS
+            shasum -a 256 -- * > ../SHA256SUMS.tmp
           fi
+          mv ../SHA256SUMS.tmp SHA256SUMS
           cat SHA256SUMS
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: logic-loom-${{ matrix.target }}
           path: dist-${{ matrix.target }}/*
@@ -277,7 +279,7 @@ jobs:
 
     steps:
       - name: Checkout source at tag (for release notes)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           repository: ${{ env.SOURCE_REPO }}
           ref: ${{ env.BUILD_TAG }}
@@ -285,7 +287,7 @@ jobs:
           path: source
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8
         with:
           path: dist/
 
@@ -304,7 +306,14 @@ jobs:
         run: |
           cd release-assets
           rm -f SHA256SUMS
-          { command -v sha256sum >/dev/null 2>&1 && sha256sum * || shasum -a 256 *; } > SHA256SUMS.txt
+          # Hash into a file outside release-assets/ and move it in afterwards:
+          # redirecting straight into SHA256SUMS.txt creates it before the glob
+          # expands, so it listed itself and `sha256sum -c` always failed.
+          { command -v sha256sum >/dev/null 2>&1 && sha256sum -- * || shasum -a 256 -- *; } > ../SHA256SUMS.txt
+          mv ../SHA256SUMS.txt SHA256SUMS.txt
+          if grep -q ' \*\?SHA256SUMS' SHA256SUMS.txt; then
+            echo "::error::SHA256SUMS.txt lists a checksum manifest"; exit 1
+          fi
           cat SHA256SUMS.txt
 
       - name: Locate release notes
@@ -322,7 +331,7 @@ jobs:
           fi
 
       - name: Create / update Release with binaries
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.BUILD_TAG }}
           name: Logic-Loom ${{ env.BUILD_TAG }}

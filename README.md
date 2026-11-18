@@ -6,64 +6,63 @@
 >
 > *It takes a messy math-scribble and turns it to speed, then watches the agents to ensure they succeed.*
 
-Public home for downloadable Logic-Loom builds, release notes, install instructions, checksum manifests, and known issues.
+This repository builds and publishes the Logic-Loom installers. The app's source, issues
+and documentation live in [CEmM2/Logic-Loom](https://github.com/CEmM2/Logic-Loom).
 
-Logic-Loom is a **three-mode desktop shell** for research workflows:
-
-- **zsum** — a desktop front-end for the [zotero-summarizer](https://github.com/SOSOVSKI/zotero-summarizer) pipeline: run summarization stages, browse the published vault, inspect runs.
-- **akms** *(gated)* — optional [AKMS](https://github.com/SOSOVSKI/AKMS) knowledge-graph tooling: batch node generation, a read-only graph explorer, a **Learn** tab, and a bundled **curated library of established nodes**.
-- **assistant** — paper discovery across OpenAlex + Semantic Scholar, source batches, workflow runs, and a workspace-wide **⌘K / Ctrl-K** search.
-
-Current release line: **v0.1.0-alpha.7**.
-
-> **Upgrading from alpha.5 or alpha.6?** Those builds crashed the moment you ran
-> any Zotero pipeline stage (`unrecognized arguments: -m logic_loom_api._zsum_launcher …`).
-> alpha.7 fixes it, and repairs the stale setting the old builds could save — no
-> manual config edit needed.
+**Documentation: <https://cemm2.github.io/Logic-Loom/>**
 
 ## Download
 
 - Latest release: <https://github.com/CEmM2/Logic-Loom-releases/releases/latest>
 - All releases: <https://github.com/CEmM2/Logic-Loom-releases/releases>
 
-Release binaries live in **GitHub Releases**, not in this repo's tree and not in the private source repository. Each tagged release attaches macOS/Linux/Windows installers plus a `SHA256SUMS.txt` manifest.
+Each release attaches the macOS, Linux and Windows installers and a `SHA256SUMS.txt`
+manifest. Check a download with:
 
-## What lives in this repo
+```bash
+sha256sum -c SHA256SUMS.txt --ignore-missing          # Linux
+shasum -a 256 -c SHA256SUMS.txt --ignore-missing      # macOS
+```
 
-- `docs/` — public product docs, install guidance, AKMS/zsum context, and the release workflow
-- `release-notes/` — archived release notes through alpha.5
-- `checksums/` — checksum manifests and verification guidance
+Up to v0.3.3 the manifest also listed itself, so that one line reports `FAILED`; the
+installers' lines are what matter.
 
-> **Note:** the `staging/`, `checksums/`, and `release-notes/` folders hold artifacts from the older manual release model (through alpha.5). As of the alpha.6 line, binaries are built by CI and attached directly to each GitHub Release, and the release body is published from the source repo — see [docs/github-releases.md](docs/github-releases.md).
+Then follow [Install](https://cemm2.github.io/Logic-Loom/install/index.html) and
+[First run](https://cemm2.github.io/Logic-Loom/install/first-run.html). Known problems are
+listed on the [Known issues](https://cemm2.github.io/Logic-Loom/known-issues.html) page.
 
-## Start here
+## What Logic-Loom is
 
-- [Logic-Loom overview](docs/logic-loom.md)
-- [Install instructions](docs/install.md)
-- [zotero-summarizer guide](docs/zotero-summarizer.md)
-- [AKMS integration guide](docs/akms.md)
-- [Known issues](docs/known-issues.md)
-- [GitHub Releases workflow](docs/github-releases.md)
+A desktop app for research workflows, with six modes:
 
-## What the app bundles
+| Mode | What it is for |
+| --- | --- |
+| **zsum** | Run the [zotero-summarizer](https://github.com/CEmM2/zotero-summarizer) pipeline and browse the published vault |
+| **AKMS** | [AKMS](https://cemm2.github.io/AKMS/) batch node generation, node review, the read-only graph explorer, Learn |
+| **Assistant** | Paper discovery (OpenAlex, Semantic Scholar), source batches, workflow runs, Ctrl-K / ⌘K workspace search |
+| **MechDSL** | Compile `% mechanics` LaTeX into solver code with [MechDSL](https://cemm2.github.io/MechDSL/) |
+| **Failure Memory** | Inspect `.failure-memory` lesson registries |
+| **Records** | Browse akms-records stores and their record graph |
 
-- Tauri desktop shell and React frontend
-- Bundled `logic-loom-api` Python sidecar
-- Bundled `zotero-summarizer` package and its Python runtime dependencies
-- The vendored `akms` / `akms-nodes-gen` / `akms-learn` engines, so AKMS-gated tabs ship in the packaged app
-- A curated, read-only library of **established** knowledge nodes (Tier A) plus ready-to-run **starter batches** (Tier B)
+The installers bundle the desktop shell, the Python backend and every optional package,
+so all six modes are available. Zotero, Better BibTeX, your PDFs and any LLM provider stay
+external; the app tells you when one it needs is missing.
 
-## What you still need
+## How a release is built
 
-- Zotero
-- Better BibTeX JSON export
-- Access to your local PDFs
-- An LLM backend or CLI — Ollama, LM Studio, an OpenAI-compatible endpoint, Claude CLI, Codex CLI, Gemini CLI, or NotebookLM
-- An AKMS source vault only if you want the graph/Learn features
+Pushing a `v*` tag here runs [`build-binaries.yml`](.github/workflows/build-binaries.yml).
+It checks out the public source at the same tag, builds on macOS, Linux (Ubuntu 22.04,
+glibc 2.35) and Windows runners, and attaches the installers and `SHA256SUMS.txt` to the
+tag's Release. No secrets are needed. A manual run builds any source ref without
+publishing, as a dry run. The source repository's own release carries only the source
+archives.
 
-## Current release status
+Builds are not yet signed or notarized, so expect macOS Gatekeeper and Windows SmartScreen
+warnings on first launch.
 
-- Early alpha / pre-release quality
-- Platform assets may vary by release — check the assets on the specific GitHub Release
-- macOS Gatekeeper and Windows SmartScreen warnings are expected until signing/notarization is added
-- Some onboarding flows still expose expert-oriented configuration fields inherited from the underlying research tooling
+## Older material
+
+`docs/`, `release-notes/` and `checksums/` are kept from the alpha releases (through
+v0.1.0-alpha.7) and are no longer updated. Current documentation is on the
+[docs site](https://cemm2.github.io/Logic-Loom/), and each release's notes are on its
+GitHub Release.
